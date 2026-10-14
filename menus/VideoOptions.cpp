@@ -23,6 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "PicButton.h"
 #include "Slider.h"
 #include "CheckBox.h"
+#include "SpinControl.h"
+#include "StringArrayModel.h"
 #include "YesNoMessageBox.h"
 
 #define ART_BANNER	  	"gfx/shell/head_vidoptions"
@@ -63,6 +65,7 @@ public:
 	CMenuCheckBox	filtering;
 	CMenuCheckBox	detailtex;
 	CMenuCheckBox	hudscale;
+	CMenuSpinControl	quality; // r_vk_quality, Vulkan renderer only
 	CMenuYesNoMessageBox	msgBox;
 
 	HIMAGE		hTestImage;
@@ -106,7 +109,7 @@ void CMenuVidOptions::SaveAndPopMenu( void )
 	overbright.WriteCvar();
 	filtering.WriteCvar();
 	hudscale.WriteCvar();
-	// gamma and brightness is already written
+	// gamma, brightness and quality are already written
 
 	CMenuFramework::SaveAndPopMenu();
 }
@@ -224,6 +227,39 @@ void CMenuVidOptions::_Init( void )
 	hudscale.SetCoord( 72, height );
 	height += 50;
 
+	// the values of r_vk_quality, in the order of the names
+	static const char *qualityValues[] = { "classic", "enhanced" };
+	static const char *qualityNames[] =
+	{
+		L( "Classic" ),
+		L( "Enhanced (HDR)" ),
+	};
+	static CStringArrayModel qualityModel( qualityNames, V_ARRAYSIZE( qualityNames ));
+
+	quality.szName = L( "Rendering quality" );
+	quality.Setup( &qualityModel );
+	quality.SetRect( 390, 710, 300, 32 );
+	quality.SetCharSize( QM_SMALLFONT );
+	quality.onChanged = CMenuEditable::WriteCvarCb; // applies at once, no restart
+	quality.onCvarGet.pExtra = (void *)qualityValues;
+	SET_EVENT_MULTI( quality.onCvarGet,
+	{
+		CMenuSpinControl *spin = (CMenuSpinControl *)pSelf;
+		const char **values = (const char **)pExtra;
+		const char *cvar = EngFuncs::GetCvarString( spin->CvarName( ));
+
+		// "rt" draws as enhanced until ray tracing exists
+		spin->SetCurrentValue( stricmp( cvar, values[0] ) ? 1.0f : 0.0f );
+	});
+	quality.onCvarWrite.pExtra = (void *)qualityValues;
+	SET_EVENT_MULTI( quality.onCvarWrite,
+	{
+		CMenuSpinControl *spin = (CMenuSpinControl *)pSelf;
+		const char **values = (const char **)pExtra;
+
+		EngFuncs::CvarSetString( spin->CvarName(), values[(int)spin->GetCurrentValue()] );
+	});
+
 	msgBox.SetMessage( L( "^1WARNING: This is an experimental option and turning it on might break mods!^7\n\nReload the game or reconnect to the server to apply the settings."));
 	msgBox.onNegative.pExtra = &hudscale;
 	SET_EVENT_MULTI( msgBox.onNegative,
@@ -283,6 +319,7 @@ void CMenuVidOptions::_Init( void )
 	AddItem( overbright );
 	AddItem( filtering );
 	AddItem( hudscale );
+	AddItem( quality );
 	AddItem( testImage );
 
 #if LEGACY_VIEWSIZE
@@ -310,6 +347,12 @@ void CMenuVidOptions::Reload()
 {
 	bool gl_active = !strnicmp( EngFuncs::GetCvarString( "r_refdll_loaded" ), "gl", 2 );
 	bool soft_active = !stricmp( EngFuncs::GetCvarString( "r_refdll_loaded" ), "soft" );
+	// ref_vk shares ref_gl's overbright and texture filtering cvars
+	bool vk_active = !stricmp( EngFuncs::GetCvarString( "r_refdll_loaded" ), "vk" );
+
+	quality.SetVisibility( vk_active );
+	if( vk_active )
+		quality.LinkCvar( "r_vk_quality", CMenuEditable::CVAR_STRING );
 
 	detailtex.SetGrayed( !gl_active );
 	detailtex.SetInactive( !gl_active );
@@ -340,10 +383,10 @@ void CMenuVidOptions::Reload()
 	swwater.SetGrayed( !gl_active );
 	swwater.SetInactive( !gl_active );
 
-	overbright.SetGrayed( !gl_active );
-	overbright.SetInactive( !gl_active );
+	overbright.SetGrayed( !gl_active && !vk_active );
+	overbright.SetInactive( !gl_active && !vk_active );
 
-	if( soft_active || gl_active )
+	if( soft_active || gl_active || vk_active )
 	{
 		filtering.SetGrayed( false );
 		filtering.SetInactive( false );
