@@ -65,7 +65,8 @@ public:
 	CMenuCheckBox	filtering;
 	CMenuCheckBox	detailtex;
 	CMenuCheckBox	hudscale;
-	CMenuSpinControl	quality; // r_vk_quality, Vulkan renderer only
+	CMenuSpinControl	quality; // r_vk_preset, Vulkan renderer only
+	CMenuCheckBox	rtShadows, rtOcclusion, rtReflections, rtLighting; // ray traced effects, Vulkan renderer only
 	CMenuYesNoMessageBox	msgBox;
 
 	HIMAGE		hTestImage;
@@ -227,12 +228,17 @@ void CMenuVidOptions::_Init( void )
 	hudscale.SetCoord( 72, height );
 	height += 50;
 
-	// the values of r_vk_quality, in the order of the names
-	static const char *qualityValues[] = { "classic", "enhanced" };
+	// the values of r_vk_preset, in the order of the names; another value
+	// (a setting changed by hand) shows as the last one
+	static const char *qualityValues[] = { "classic", "low", "medium", "high", "ultra" };
 	static const char *qualityNames[] =
 	{
 		L( "Classic" ),
-		L( "Enhanced (HDR)" ),
+		L( "Low (HDR)" ),
+		L( "Medium (HDR)" ),
+		L( "High (ray tracing)" ),
+		L( "Ultra (ray tracing)" ),
+		L( "Custom" ),
 	};
 	static CStringArrayModel qualityModel( qualityNames, V_ARRAYSIZE( qualityNames ));
 
@@ -247,18 +253,37 @@ void CMenuVidOptions::_Init( void )
 		CMenuSpinControl *spin = (CMenuSpinControl *)pSelf;
 		const char **values = (const char **)pExtra;
 		const char *cvar = EngFuncs::GetCvarString( spin->CvarName( ));
+		int i;
 
-		// "rt" draws as enhanced until ray tracing exists
-		spin->SetCurrentValue( stricmp( cvar, values[0] ) ? 1.0f : 0.0f );
+		for( i = 0; i < 5; i++ )
+		{
+			if( !stricmp( cvar, values[i] ))
+				break;
+		}
+
+		spin->SetCurrentValue( (float)i );
 	});
 	quality.onCvarWrite.pExtra = (void *)qualityValues;
 	SET_EVENT_MULTI( quality.onCvarWrite,
 	{
 		CMenuSpinControl *spin = (CMenuSpinControl *)pSelf;
 		const char **values = (const char **)pExtra;
+		const int i = (int)spin->GetCurrentValue();
 
-		EngFuncs::CvarSetString( spin->CvarName(), values[(int)spin->GetCurrentValue()] );
+		// "Custom" is what the settings are: nothing to set
+		if( i < 5 )
+			EngFuncs::CvarSetString( spin->CvarName(), values[i] );
 	});
+
+	// each ray traced effect, on top of the preset: the preset becomes custom
+	CMenuCheckBox *rtBoxes[] = { &rtShadows, &rtOcclusion, &rtReflections, &rtLighting };
+	static const char *rtNames[] = { L( "RT shadows" ), L( "RT ambient occlusion" ), L( "RT reflections" ), L( "RT lighting" ) };
+
+	for( int i = 0; i < 4; i++ )
+	{
+		rtBoxes[i]->szName = rtNames[i];
+		rtBoxes[i]->SetCoord( 880, 560 + i * 50 );
+	}
 
 	msgBox.SetMessage( L( "^1WARNING: This is an experimental option and turning it on might break mods!^7\n\nReload the game or reconnect to the server to apply the settings."));
 	msgBox.onNegative.pExtra = &hudscale;
@@ -320,6 +345,10 @@ void CMenuVidOptions::_Init( void )
 	AddItem( filtering );
 	AddItem( hudscale );
 	AddItem( quality );
+	AddItem( rtShadows );
+	AddItem( rtOcclusion );
+	AddItem( rtReflections );
+	AddItem( rtLighting );
 	AddItem( testImage );
 
 #if LEGACY_VIEWSIZE
@@ -351,8 +380,18 @@ void CMenuVidOptions::Reload()
 	bool vk_active = !stricmp( EngFuncs::GetCvarString( "r_refdll_loaded" ), "vk" );
 
 	quality.SetVisibility( vk_active );
+	rtShadows.SetVisibility( vk_active );
+	rtOcclusion.SetVisibility( vk_active );
+	rtReflections.SetVisibility( vk_active );
+	rtLighting.SetVisibility( vk_active );
 	if( vk_active )
-		quality.LinkCvar( "r_vk_quality", CMenuEditable::CVAR_STRING );
+	{
+		quality.LinkCvar( "r_vk_preset", CMenuEditable::CVAR_STRING );
+		rtShadows.LinkCvar( "r_vk_rt_shadows" );
+		rtOcclusion.LinkCvar( "r_vk_rt_ao" );
+		rtReflections.LinkCvar( "r_vk_rt_reflections" );
+		rtLighting.LinkCvar( "r_vk_rt_gi" );
+	}
 
 	detailtex.SetGrayed( !gl_active );
 	detailtex.SetInactive( !gl_active );
