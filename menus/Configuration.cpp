@@ -61,6 +61,10 @@ void CMenuOptions::_Init( void )
 		PC_AUDIO, UI_Audio_Menu, QMF_NOTIFY );
 	AddButton( L( "GameUI_Video" ), L( "Change screen size, video mode, gamme and glare reduction." ),
 		PC_VIDEO, UI_Video_Menu, QMF_NOTIFY );
+	// only for a game whose client has the customizable crosshair
+	if( EngFuncs::GetCvarString( "xhair_color" )[0] )
+		AddButton( L( "Crosshair" ), L( "Change the crosshair shape, size and colours." ),
+			PC_CROSSHAIR, UI_Crosshair_Menu, QMF_NOTIFY );
 	AddButton( L( "Done" ), L( "Go back to the Main Menu." ),
 		PC_DONE, VoidCb( &CMenuOptions::Hide ), QMF_NOTIFY );
 }

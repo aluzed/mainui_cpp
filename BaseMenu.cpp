@@ -1190,6 +1190,7 @@ void UI_Init( void )
 	ui_showclassmodels = EngFuncs::CvarRegister( "ui_showclassmodels", "1", FCVAR_ARCHIVE );
 	ui_show_window_stack = EngFuncs::CvarRegister( "ui_show_window_stack", "0", FCVAR_ARCHIVE );
 	ui_borderclip = EngFuncs::CvarRegister( "ui_borderclip", "0", FCVAR_ARCHIVE );
+	EngFuncs::CvarRegister( "ui_xhair_background", "0", FCVAR_ARCHIVE ); // crosshair preview: 0 map, 1 black, 2 light
 	ui_prefer_won_background = EngFuncs::CvarRegister( "ui_prefer_won_background", "0", FCVAR_ARCHIVE );
 	ui_background_stretch = EngFuncs::CvarRegister( "ui_background_stretch", "0", FCVAR_ARCHIVE );
 	ui_logohorizontal = EngFuncs::CvarRegister( "ui_logohorizontal", "0", FCVAR_ARCHIVE );
