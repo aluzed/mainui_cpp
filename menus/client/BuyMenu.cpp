@@ -60,7 +60,8 @@ public:
 			CMenuAction *cancelBtn;
 			if( eAmmoClass == BUY_EQUIPMENT )
 			{
-				cancelBtn = AddButton( '0', L("Cstrike_Cancel"), Point( 100, 580 ), CEventCallback( MenuCb( &CClientBaseBuyMenu::cancelPressedCb ), nullptr ) );
+				// under nine items: the counter-terrorists' incendiary grenade is the ninth
+				cancelBtn = AddButton( '0', L("Cstrike_Cancel"), Point( 100, 630 ), CEventCallback( MenuCb( &CClientBaseBuyMenu::cancelPressedCb ), nullptr ) );
 			}
 			else
 			{
@@ -680,6 +681,8 @@ void CClientItemTMenu::_Init()
 	AddWeapon( BuyMenuWeaponInfo{ "HE_Grenade", "hegrenade", "hegren", "HEGrenade" });
 	AddWeapon( BuyMenuWeaponInfo{ "Smoke_Grenade", "smokegrenade", "sgren", "SmokeGrenade" });
 	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_TER", "nightvision", "nvgs", "Nightvision" });
+	// the smoke grenade's picture until the bottle has its own
+	AddWeapon( BuyMenuWeaponInfo{ "Molotov", "smokegrenade", "molotov", "Molotov" });
 }
 void CClientItemCTMenu::_Init()
 {
@@ -694,4 +697,5 @@ void CClientItemCTMenu::_Init()
 	AddWeapon( BuyMenuWeaponInfo{ "Defuser", "defuser", "defuser", "Defuser" });
 	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_CT", "nightvision", "nvgs", "Nightvision" });
 	AddWeapon( BuyMenuWeaponInfo{ "Shield", "shield", "shield", "Shield" });
+	AddWeapon( BuyMenuWeaponInfo{ "Incendiary", "smokegrenade", "incgrenade", "Incendiary" });
 }
