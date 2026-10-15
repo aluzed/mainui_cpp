@@ -291,22 +291,34 @@ public:
 		muzzleenLabel_.Hide();
 	}
 
-	void AddWeapon( BuyMenuWeaponInfo info )
+	// key: the item's number, '1' + its index by default; the button sits on
+	// the row of its number, and its label shows that number
+	void AddWeapon( BuyMenuWeaponInfo info, int key = 0 )
 	{
 		weapons[numWeapons] = info;
 
-		int key = '1' + numWeapons;
+		if( !key )
+			key = '1' + numWeapons;
+
 		Point pt;
 		pt.x = 100;
-		pt.y = 180 + numWeapons * 50;
+		pt.y = 180 + ( key - '1' ) * 50;
 
 		CUtlString labelKey;
 		labelKey.Format( "Cstrike_%s", info.name );
 
+		// the game's strings carry their own number ("&6 NIGHTVISION")
+		const char *label = L( labelKey.String() );
+		if( label[0] == '&' && label[1] >= '0' && label[1] <= '9' && label[2] == ' ' )
+			label += 3;
+
+		CUtlString text;
+		text.Format( "%c %s", key, label );
+
 		CEventCallback pressCb = MenuCb( &CClientBaseBuyMenu::weaponPressedCb );
 		pressCb.pExtra = &weapons[numWeapons];
 
-		CMenuAction *btn = AddButton( key, L( labelKey.String() ), pt, pressCb );
+		CMenuAction *btn = AddButton( key, text.String(), pt, pressCb );
 		btn->onPressed.pExtra = &weapons[numWeapons];
 
 		btn->onGotFocus = MenuCb( &CClientBaseBuyMenu::weaponFocusCb );
@@ -680,9 +692,10 @@ void CClientItemTMenu::_Init()
 	AddWeapon( BuyMenuWeaponInfo{ "Flashbang", "flashbang", "flash", "Flashbang" });
 	AddWeapon( BuyMenuWeaponInfo{ "HE_Grenade", "hegrenade", "hegren", "HEGrenade" });
 	AddWeapon( BuyMenuWeaponInfo{ "Smoke_Grenade", "smokegrenade", "sgren", "SmokeGrenade" });
-	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_TER", "nightvision", "nvgs", "Nightvision" });
-	// the smoke grenade's picture until the bottle has its own
-	AddWeapon( BuyMenuWeaponInfo{ "Molotov", "smokegrenade", "molotov", "Molotov" });
+	// the grenades together, as in Counter-Strike 2, the same keys for both
+	// teams; the smoke grenade's picture until the bottle has its own
+	AddWeapon( BuyMenuWeaponInfo{ "Molotov", "smokegrenade", "molotov", "Molotov" }, '6' );
+	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_TER", "nightvision", "nvgs", "Nightvision" }, '9' );
 }
 void CClientItemCTMenu::_Init()
 {
@@ -694,8 +707,8 @@ void CClientItemCTMenu::_Init()
 	AddWeapon( BuyMenuWeaponInfo{ "Flashbang", "flashbang", "flash", "Flashbang" });
 	AddWeapon( BuyMenuWeaponInfo{ "HE_Grenade", "hegrenade", "hegren", "HEGrenade" });
 	AddWeapon( BuyMenuWeaponInfo{ "Smoke_Grenade", "smokegrenade", "sgren", "SmokeGrenade" });
-	AddWeapon( BuyMenuWeaponInfo{ "Defuser", "defuser", "defuser", "Defuser" });
-	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_CT", "nightvision", "nvgs", "Nightvision" });
-	AddWeapon( BuyMenuWeaponInfo{ "Shield", "shield", "shield", "Shield" });
-	AddWeapon( BuyMenuWeaponInfo{ "Incendiary", "smokegrenade", "incgrenade", "Incendiary" });
+	AddWeapon( BuyMenuWeaponInfo{ "Incendiary", "smokegrenade", "incgrenade", "Incendiary" }, '6' );
+	AddWeapon( BuyMenuWeaponInfo{ "Defuser", "defuser", "defuser", "Defuser" }, '7' );
+	AddWeapon( BuyMenuWeaponInfo{ "Shield", "shield", "shield", "Shield" }, '8' );
+	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_CT", "nightvision", "nvgs", "Nightvision" }, '9' );
 }
