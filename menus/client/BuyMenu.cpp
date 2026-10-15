@@ -479,7 +479,6 @@ public:
 private:
 	CMenuAction categoriesTitle;
 	CMenuBitmap columnDivider;
-	CMenuCheckBox autoFill;
 	int m_iTeam = TEAM_TERRORIST;
 };
 class CClientPistolsTMenu         : public CClientBaseBuyMenu { virtual void _Init() override; };
@@ -573,10 +572,8 @@ void CClientMainBuyMenu::_Init()
 	pt.y += 50;
 	AddButton( '5', L( "Cstrike_MachineGuns" ), pt, Menu_Show_Team<CClientMachineGunsMenu, CClientMachineGunsMenu> );
 	pt.y += 50;
-	AddButton( '6', L( "Cstrike_Prim_Ammo" ), pt, ExecAndHide( "primammo" ) );
-	pt.y += 50;
-	AddButton( '7', L( "Cstrike_Sec_Ammo" ), pt, ExecAndHide( "secammo" ));
-	pt.y += 50;
+	// no ammo to buy: a weapon comes with all of it (mp_buy_ammo 0 on the
+	// server); the equipment keeps its key
 	AddButton( '8', L( "Cstrike_Equipment" ), pt, Menu_Show_Team<CClientItemTMenu, CClientItemCTMenu> );
 	pt.y += 50;
 	AddButton( '0', L( "Cstrike_Cancel" ), pt, CEventCallback( []( CMenuBaseItem *, void * ) { UI_CloseClientMenu(); } ) );
@@ -586,16 +583,6 @@ void CClientMainBuyMenu::_Init()
 	AddButton( 'A', L( "Cstrike_BuyMenuAutobuy" ), pt, ExecAndHide( "autobuy" ) );
 	pt.y += 50;
 	AddButton( 'R', L( "Cstrike_BuyMenuRebuy" ), pt, ExecAndHide( "rebuy" ) );
-	pt.y += 50;
-
-	autoFill.szName = L( "Auto buy ammo" );
-	autoFill.pos = pt;
-	autoFill.SetCharSize( QM_SMALLERFONT );
-	autoFill.colorBase = uiPromptTextColor;
-	autoFill.LinkCvar( "ui_cs_autofill" );
-	autoFill.onChanged = CMenuEditable::WriteCvarCb;
-
-	AddItem( autoFill );
 }
 void CClientPistolsTMenu::_Init()
 {
