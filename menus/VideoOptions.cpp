@@ -408,7 +408,7 @@ void CMenuVidOptions::Reload()
 	if( !vk_active )
 		vkStatus.szName = L( "Needs the Vulkan renderer: Video modes, Renderer, Vulkan" );
 	else if( !rt_active )
-		vkStatus.szName = L( "No ray tracing on this GPU or driver: High and Ultra look like Medium" );
+		vkStatus.szName = L( "No ray tracing on this GPU or driver" );
 	else vkStatus.szName = L( "Ray tracing available" );
 
 	quality.SetGrayed( !vk_active );
