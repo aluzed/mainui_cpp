@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "PicButton.h"
 #include "Slider.h"
 #include "CheckBox.h"
+#include "Action.h"
 #include "SpinControl.h"
 #include "StringArrayModel.h"
 #include "YesNoMessageBox.h"
@@ -65,8 +66,11 @@ public:
 	CMenuCheckBox	filtering;
 	CMenuCheckBox	detailtex;
 	CMenuCheckBox	hudscale;
-	CMenuSpinControl	quality; // r_vk_preset, Vulkan renderer only
-	CMenuCheckBox	rtShadows, rtOcclusion, rtReflections, rtLighting; // ray traced effects, Vulkan renderer only
+	// the Vulkan renderer's section: greyed, with what it needs, when the
+	// renderer isn't loaded or the GPU can't trace rays
+	CMenuAction	vkPanel, vkTitle, vkStatus;
+	CMenuSpinControl	quality; // r_vk_preset
+	CMenuCheckBox	rtShadows, rtOcclusion, rtReflections, rtLighting; // ray traced effects
 	CMenuYesNoMessageBox	msgBox;
 
 	HIMAGE		hTestImage;
@@ -170,7 +174,7 @@ void CMenuVidOptions::_Init( void )
 	banner.SetPicture( ART_BANNER );
 
 	testImage.iFlags = QMF_INACTIVE;
-	testImage.SetRect( 390, 225, 480, 450 );
+	testImage.SetRect( 390, 225, 480, 320 ); // the Vulkan section goes under it
 	testImage.SetPicture( ART_GAMMA );
 
 	int height = 280;
@@ -242,9 +246,24 @@ void CMenuVidOptions::_Init( void )
 	};
 	static CStringArrayModel qualityModel( qualityNames, V_ARRAYSIZE( qualityNames ));
 
+	// a dark card under the section, for contrast with the artwork
+	vkPanel.iFlags = QMF_INACTIVE;
+	vkPanel.SetBackground( 0xC0101010 );
+	vkPanel.SetRect( 380, 555, 620, 210 );
+
+	vkTitle.szName = L( "Vulkan renderer" );
+	vkTitle.iFlags = QMF_INACTIVE | QMF_DROPSHADOW;
+	vkTitle.SetCharSize( QM_SMALLFONT );
+	vkTitle.SetCoord( 395, 565 );
+
+	vkStatus.iFlags = QMF_INACTIVE | QMF_DROPSHADOW;
+	vkStatus.colorBase = uiColorHelp;
+	vkStatus.SetCharSize( QM_SMALLFONT );
+	vkStatus.SetCoord( 395, 592 );
+
 	quality.szName = L( "Rendering quality" );
 	quality.Setup( &qualityModel );
-	quality.SetRect( 390, 710, 300, 32 );
+	quality.SetRect( 395, 660, 280, 32 );
 	quality.SetCharSize( QM_SMALLFONT );
 	quality.onChanged = CMenuEditable::WriteCvarCb; // applies at once, no restart
 	quality.onCvarGet.pExtra = (void *)qualityValues;
@@ -282,7 +301,7 @@ void CMenuVidOptions::_Init( void )
 	for( int i = 0; i < 4; i++ )
 	{
 		rtBoxes[i]->szName = rtNames[i];
-		rtBoxes[i]->SetCoord( 880, 560 + i * 50 );
+		rtBoxes[i]->SetCoord( 700, 625 + i * 34 ); // under the status line
 	}
 
 	msgBox.SetMessage( L( "^1WARNING: This is an experimental option and turning it on might break mods!^7\n\nReload the game or reconnect to the server to apply the settings."));
@@ -344,6 +363,9 @@ void CMenuVidOptions::_Init( void )
 	AddItem( overbright );
 	AddItem( filtering );
 	AddItem( hudscale );
+	AddItem( vkPanel );
+	AddItem( vkTitle );
+	AddItem( vkStatus );
 	AddItem( quality );
 	AddItem( rtShadows );
 	AddItem( rtOcclusion );
@@ -379,14 +401,30 @@ void CMenuVidOptions::Reload()
 	// ref_vk shares ref_gl's overbright and texture filtering cvars
 	bool vk_active = !stricmp( EngFuncs::GetCvarString( "r_refdll_loaded" ), "vk" );
 
-	quality.SetVisibility( vk_active );
-	rtShadows.SetVisibility( vk_active );
-	rtOcclusion.SetVisibility( vk_active );
-	rtReflections.SetVisibility( vk_active );
-	rtLighting.SetVisibility( vk_active );
+	// the ray traced effects need a GPU (and a driver: 64-bit on AMD) that traces rays
+	bool rt_active = vk_active && EngFuncs::GetCvarFloat( "r_vk_rt_supported" ) != 0.0f;
+	CMenuCheckBox *rtBoxes[] = { &rtShadows, &rtOcclusion, &rtReflections, &rtLighting };
+
+	if( !vk_active )
+		vkStatus.szName = L( "Needs the Vulkan renderer: Video modes, Renderer, Vulkan" );
+	else if( !rt_active )
+		vkStatus.szName = L( "No ray tracing on this GPU or driver: High and Ultra look like Medium" );
+	else vkStatus.szName = L( "Ray tracing available" );
+
+	quality.SetGrayed( !vk_active );
+	quality.SetInactive( !vk_active );
+	if( vk_active )
+		quality.LinkCvar( "r_vk_preset", CMenuEditable::CVAR_STRING );
+	else quality.SetCurrentValue( 0.0f ); // Classic, as the other renderers draw
+
+	for( int i = 0; i < 4; i++ )
+	{
+		rtBoxes[i]->SetGrayed( !rt_active );
+		rtBoxes[i]->SetInactive( !rt_active );
+	}
+
 	if( vk_active )
 	{
-		quality.LinkCvar( "r_vk_preset", CMenuEditable::CVAR_STRING );
 		rtShadows.LinkCvar( "r_vk_rt_shadows" );
 		rtOcclusion.LinkCvar( "r_vk_rt_ao" );
 		rtReflections.LinkCvar( "r_vk_rt_reflections" );
