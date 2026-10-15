@@ -42,6 +42,18 @@ static void NormalizeTranslationString( const char *source, CUtlString &result )
 	}
 }
 
+// a label of the game's strings with its number replaced by key ("&8 EQUIPMENT")
+static const char *StripMenuNumber( const char *label, int key )
+{
+	static char buf[128];
+
+	if( label[0] == '&' && label[1] >= '0' && label[1] <= '9' && label[2] == ' ' )
+		label += 3;
+
+	snprintf( buf, sizeof( buf ), "%c %s", key, label );
+	return buf;
+}
+
 static const char *TranslateStringIfFound( const char *key )
 {
 	const char *translated = L( key );
@@ -307,18 +319,11 @@ public:
 		CUtlString labelKey;
 		labelKey.Format( "Cstrike_%s", info.name );
 
-		// the game's strings carry their own number ("&6 NIGHTVISION")
-		const char *label = L( labelKey.String() );
-		if( label[0] == '&' && label[1] >= '0' && label[1] <= '9' && label[2] == ' ' )
-			label += 3;
-
-		CUtlString text;
-		text.Format( "%c %s", key, label );
-
 		CEventCallback pressCb = MenuCb( &CClientBaseBuyMenu::weaponPressedCb );
 		pressCb.pExtra = &weapons[numWeapons];
 
-		CMenuAction *btn = AddButton( key, text.String(), pt, pressCb );
+		// the game's strings carry their own number ("&6 NIGHTVISION")
+		CMenuAction *btn = AddButton( key, StripMenuNumber( L( labelKey.String() ), key ), pt, pressCb );
 		btn->onPressed.pExtra = &weapons[numWeapons];
 
 		btn->onGotFocus = MenuCb( &CClientBaseBuyMenu::weaponFocusCb );
@@ -573,8 +578,8 @@ void CClientMainBuyMenu::_Init()
 	AddButton( '5', L( "Cstrike_MachineGuns" ), pt, Menu_Show_Team<CClientMachineGunsMenu, CClientMachineGunsMenu> );
 	pt.y += 50;
 	// no ammo to buy: a weapon comes with all of it (mp_buy_ammo 0 on the
-	// server); the equipment keeps its key
-	AddButton( '8', L( "Cstrike_Equipment" ), pt, Menu_Show_Team<CClientItemTMenu, CClientItemCTMenu> );
+	// server), the equipment follows the machine guns
+	AddButton( '6', StripMenuNumber( L( "Cstrike_Equipment" ), '6' ), pt, Menu_Show_Team<CClientItemTMenu, CClientItemCTMenu> );
 	pt.y += 50;
 	AddButton( '0', L( "Cstrike_Cancel" ), pt, CEventCallback( []( CMenuBaseItem *, void * ) { UI_CloseClientMenu(); } ) );
 
@@ -679,10 +684,10 @@ void CClientItemTMenu::_Init()
 	AddWeapon( BuyMenuWeaponInfo{ "Flashbang", "flashbang", "flash", "Flashbang" });
 	AddWeapon( BuyMenuWeaponInfo{ "HE_Grenade", "hegrenade", "hegren", "HEGrenade" });
 	AddWeapon( BuyMenuWeaponInfo{ "Smoke_Grenade", "smokegrenade", "sgren", "SmokeGrenade" });
-	// the grenades together, as in Counter-Strike 2, the same keys for both
+	// the grenades together, as in Counter-Strike 2, on the same key for both
 	// teams; the smoke grenade's picture until the bottle has its own
 	AddWeapon( BuyMenuWeaponInfo{ "Molotov", "smokegrenade", "molotov", "Molotov" }, '6' );
-	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_TER", "nightvision", "nvgs", "Nightvision" }, '9' );
+	AddWeapon( BuyMenuWeaponInfo{ "NightVision_Button_TER", "nightvision", "nvgs", "Nightvision" }, '7' );
 }
 void CClientItemCTMenu::_Init()
 {
